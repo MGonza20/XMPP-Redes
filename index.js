@@ -25,7 +25,7 @@ xmpp.on("stanza", async function stanzaHandler(stanza) {
     if (stanza.is("message")) {
         const body = stanza.getChildText("body");
         if (body) {
-            console.log("New message from %s: %s\n", stanza.attrs.from, body);
+            console.log(`New message from ${stanza.attrs.from}: ${body}\n`);
         }
     }
 });  
