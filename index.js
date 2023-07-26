@@ -1,5 +1,5 @@
 const { client, xml } = require("@xmpp/client");
-const debug = require("@xmpp/debug");
+// const debug = require("@xmpp/debug");
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
@@ -11,7 +11,7 @@ const xmpp = client({
   password: "1234",
 });
 
-debug(xmpp, true);
+// debug(xmpp, true);
 
 xmpp.on("error", (err) => {
   console.error(err);
@@ -23,9 +23,10 @@ xmpp.on("offline", () => {
 
 xmpp.on("stanza", async function stanzaHandler(stanza) {
     if (stanza.is("message")) {
-        xmpp.off("stanza", stanzaHandler);
-        await xmpp.send(xml("presence", { type: "unavailable" }));
-        await xmpp.stop();
+        const body = stanza.getChildText("body");
+        if (body) {
+            console.log("New message from %s: %s\n", stanza.attrs.from, body);
+        }
     }
 });  
 
