@@ -4,7 +4,7 @@
   "description": "Chat implementinng XMPP",
   "main": "index.js",
   "scripts": {
-    "start": "node index.js"
+    "start": "node --no-warnings index.js"
   },
   "repository": {
     "type": "git",
@@ -23,6 +23,7 @@
   "homepage": "https://github.com/MGonza20/XMPP-Redes#readme",
   "dependencies": {
     "@xmpp/client": "^0.13.1",
-    "@xmpp/debug": "^0.13.0"
+    "@xmpp/debug": "^0.13.0",
+    "readline-sync": "^1.4.10"
   }
 }
