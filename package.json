@@ -1,0 +1,28 @@
+{
+  "name": "chat-xmpp",
+  "version": "1.0.0",
+  "description": "Chat implementinng XMPP",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/MGonza20/XMPP-Redes"
+  },
+  "keywords": [
+    "chat",
+    "XMPP",
+    "networks"
+  ],
+  "author": "Sara Paguaga",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/MGonza20/XMPP-Redes/issues"
+  },
+  "homepage": "https://github.com/MGonza20/XMPP-Redes#readme",
+  "dependencies": {
+    "@xmpp/client": "^0.13.1",
+    "@xmpp/debug": "^0.13.0"
+  }
+}
