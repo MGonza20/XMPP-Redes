@@ -34,7 +34,7 @@ const initConnection = (userInfo) => {
       if (stanza.is("message")) {
           const body = stanza.getChildText("body");
           if (body) {
-              console.log(`Nuevo mensaje de: ${stanza.attrs.from}: ${body}\n`);
+              console.log(`New message from ${stanza.attrs.from}: ${body}\n`);
           }
       }
   });  
