@@ -34,8 +34,7 @@ const initConnection = (userInfo) => {
             initConnection(newUserInfo);
         });
     }
-});
-
+  });
 
 
   xmpp.on("online", async () => {
@@ -50,7 +49,14 @@ const initConnection = (userInfo) => {
         break;
 
       case '2':
-        console.log('Not implemented yet.');
+        const contact_username = readline.question('Enter the contact\'s username: ');
+        const Iq = xml(
+            "iq",
+            { type: "set" },
+            xml("query", { xmlns: "jabber:iq:roster" }, xml("item", { jid: `${contact_username}@alumchat.xyz` }))
+        );
+        await xmpp.send(Iq);
+        console.log(`Contact ${contact_username} added.\n`);
         break;
 
       case '3':
