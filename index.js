@@ -25,14 +25,14 @@ const initConnection = (userInfo) => {
     username: userInfo.username,
     password: userInfo.password,
   });
-
+  
   xmpp.on("error", (err) => {
     if (err.toString().includes("not-authorized")) { 
-        console.log('Incorrect username or password. Try again.\n');
-        xmpp.stop().then(() => {
-            const newUserInfo = getUserInfo();
-            initConnection(newUserInfo);
-        });
+      console.log('Incorrect username or password. Try again.\n');
+      xmpp.stop().then(() => {
+        const newUserInfo = getUserInfo();
+        initConnection(newUserInfo);
+      });
     }
   });
 
@@ -47,13 +47,13 @@ const initConnection = (userInfo) => {
       case '1':
         console.log('Not implemented yet.');
         break;
-
+        
       case '2':
         const contact_username = readline.question('Enter the contact\'s username: ');
         const Iq = xml(
-            "iq",
-            { type: "set" },
-            xml("query", { xmlns: "jabber:iq:roster" }, xml("item", { jid: `${contact_username}@alumchat.xyz` }))
+          "iq",
+          { type: "set" },
+          xml("query", { xmlns: "jabber:iq:roster" }, xml("item", { jid: `${contact_username}@alumchat.xyz` }))
         );
         await xmpp.send(Iq);
         console.log(`Contact ${contact_username} added.\n`);
@@ -64,24 +64,47 @@ const initConnection = (userInfo) => {
         break;
 
       case '4':
-        receptor = readline.question('Enter the receptor\'s username: ');
-        msg = readline.question('Enter the message: ');
-        const message = xml(
-          "message",
-          { type: "chat", to: `${receptor}@alumchat.xyz`},
-          xml("body", {}, msg ),
-        );
-        await xmpp.send(message);
+        let receptor = readline.question('Enter the receptor\'s username: ');
+        const waitTimeout = 12000;
+        exit = false;
         
-        // xmpp.on("stanza", async function stanzaHandler(stanza) {
-        //   if (stanza.is("message")) {
-        //       const body = stanza.getChildText("body");
-        //       if (body) {
-        //           console.log(`${stanza.attrs.from}: ${body}\n`);
-        //       }
-        //   }
-        // });  
+        const message_stanza = (stanza) => { 
+          if (stanza.is("message")) {
+            if (!exit) {
+              clearTimeout(noMessagesTimeout); 
+              const body = stanza.getChildText("body");
+              if (body) {
+                console.log(`${stanza.attrs.from}: ${body}\n`);
+                sendMessage(); 
+              }
+            }
+          }
+        };
+      
+        xmpp.on("stanza", message_stanza);
+        let noMessagesTimeout = setTimeout(() => {
+          if (!exit){
+            console.log('Currently no messages from ' + receptor + '...\n');
+            sendMessage();
+          }
+        }, waitTimeout);
+  
+        const sendMessage = () => {
+          let msg = readline.question('Enter a message: ');        
+          if (msg != '') {
+            const message = xml(
+              "message", { type: "chat", to: `${receptor}@alumchat.xyz` },
+              xml("body", {}, msg),
+            )
+            xmpp.send(message).then(() => { noMessagesTimeout });
+          } else {
+            exit = true;
+            console.log('Exiting one on one chat conversation...\n')
+            xmpp.removeListener("stanza", message_stanza);
+          }
+        };  
 
+        sendMessage();
         break;
 
       case '5':
