@@ -14,10 +14,15 @@ const getUserInfo = () => {
 }
 
 const showMenuOptions = () => {
-  console.log('\n--------------------   Menu   --------------------\n1. Mostrar todos los usuarios/contactos y su estado\n2. Agregar un usuario a los contactos\n3. Mostrar detalles de contacto de un usuario\n4. Comunicacion 1 a 1 con cualquier usuario/contacto\n5. Participar en conversaciones grupales\n6. Definir mensaje de presencia\n7. Enviar/recibir notificaciones\n8. Enviar/recibir archivo\n')
+  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Agregar un usuario a los contactos\n3. Mostrar detalles de contacto de un usuario\n4. Comunicacion 1 a 1 con cualquier usuario/contacto\n5. Participar en conversaciones grupales\n6. Definir mensaje de presencia\n7. Enviar/recibir notificaciones\n8. Enviar/recibir archivo\n')
 }
 
 const initConnection = (userInfo) => {
+
+  // global variables
+  let showContactsStatus = false;
+  let showContactsListTitle = false;
+
   const xmpp = client({
     service: "xmpp://alumchat.xyz",
     domain: "alumchat.xyz",
@@ -36,7 +41,20 @@ const initConnection = (userInfo) => {
     }
   });
 
-
+  xmpp.on("stanza", (stanza) => {
+    if (stanza.is("presence")) {
+      if (showContactsStatus){
+        if (!showContactsListTitle) {
+          console.log('\nCONTACTS LIST: \n')
+          showContactsListTitle = true;
+        }
+        const user = stanza.attrs.from.split('@')[0];
+        const status = stanza.getChildText("status");
+        console.log(`USER: ${user} \nSTATUS: ${status || "No status"}\n`);
+      }
+    }
+  });
+  
   xmpp.on("online", async () => {
     await xmpp.send(xml("presence"));
 
@@ -45,7 +63,7 @@ const initConnection = (userInfo) => {
     let selectedOption = readline.question('Select a menu option: ');
     switch (selectedOption) {
       case '1':
-        console.log('Not implemented yet.');
+        showContactsStatus = true;
         break;
         
       case '2':
