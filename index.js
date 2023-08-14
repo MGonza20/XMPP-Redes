@@ -14,7 +14,7 @@ const getUserInfo = () => {
 }
 
 const showMenuOptions = () => {
-  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Agregar un usuario a los contactos\n3. Mostrar detalles de contacto de un usuario\n4. Comunicacion 1 a 1 con cualquier usuario/contacto\n5. Participar en conversaciones grupales\n6. Definir mensaje de presencia\n7. Enviar/recibir notificaciones\n8. Enviar/recibir archivo\n')
+  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Mostrar detalles de contacto de un usuario\n4. Chat one to one with user\n5. Participar en conversaciones grupales\n6. Definir mensaje de presencia\n7. Enviar/recibir notificaciones\n8. Enviar/recibir archivo\n')
 }
 
 const initConnection = (userInfo) => {
@@ -115,6 +115,13 @@ const initConnection = (userInfo) => {
               xml("body", {}, msg),
             )
             xmpp.send(message).then(() => { noMessagesTimeout });
+            clearTimeout(noMessagesTimeout); 
+            noMessagesTimeout = setTimeout(() => {
+              if (!exit){
+                console.log('Currently no messages from ' + receptor + '...\n');
+                sendMessage();
+              }
+            }, waitTimeout);
           } else {
             exit = true;
             console.log('Exiting one on one chat conversation...\n')
