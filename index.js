@@ -22,6 +22,7 @@ const initConnection = (userInfo) => {
   // global variables
   let showContactsStatus = false;
   let showContactsListTitle = false;
+  let showGroupMessages = false;
 
   const xmpp = client({
     service: "xmpp://alumchat.xyz",
@@ -92,7 +93,7 @@ const initConnection = (userInfo) => {
               clearTimeout(noMessagesTimeout); 
               const body = stanza.getChildText("body");
               if (body) {
-                console.log(`${stanza.attrs.from}: ${body}\n`);
+                console.log(`${stanza.attrs.from}: ${body}`);
                 sendMessage(); 
               }
             }
@@ -102,7 +103,7 @@ const initConnection = (userInfo) => {
         xmpp.on("stanza", message_stanza);
         let noMessagesTimeout = setTimeout(() => {
           if (!exit){
-            console.log('Currently no messages from ' + receptor + '...\n');
+            console.log('Currently no messages from ' + receptor + '...');
             sendMessage();
           }
         }, waitTimeout);
@@ -118,7 +119,7 @@ const initConnection = (userInfo) => {
             clearTimeout(noMessagesTimeout); 
             noMessagesTimeout = setTimeout(() => {
               if (!exit){
-                console.log('Currently no messages from ' + receptor + '...\n');
+                console.log('Currently no messages from ' + receptor + '...');
                 sendMessage();
               }
             }, waitTimeout);
@@ -132,10 +133,46 @@ const initConnection = (userInfo) => {
         sendMessage();
         break;
 
-      case '5':
-        console.log('Not implemented yet.');
-        break;
-
+        case '5':
+          const groupChat = readline.question('Enter the group chat name: ');
+          const nickname = readline.question('Enter your nickname for this group: ');      
+          const groupJid = `${groupChat}@conference.alumchat.xyz/${nickname}`;
+      
+          const presence = xml("presence", { to: groupJid });
+          await xmpp.send(presence);
+      
+          const groupMessageStanza = (stanza) => {
+            if (stanza.is("message") && stanza.attrs.type === "groupchat") {
+              const from = stanza.attrs.from.split('/')[1];
+              const body = stanza.getChildText("body");
+              if (body) {
+                console.log(`${from}: ${body}`);
+              }
+            }
+          };
+      
+          xmpp.on("stanza", groupMessageStanza);
+      
+          let exitGroupChat = false;
+          while (!exitGroupChat) {
+            let msgGC = readline.question('Enter your message for the room (or press enter to exit): ');
+            if (msgGC === '') {
+              exitGroupChat = true;
+              const exitPresence = xml("presence", { to: groupJid, type: "unavailable" });
+              await xmpp.send(exitPresence);
+              xmpp.removeListener("stanza", groupMessageStanza);
+              console.log('Exiting group chat...\n');
+            } else {
+              const message = xml(
+                "message", { type: "groupchat", to: `${groupChat}@conference.alumchat.xyz` },
+                xml("body", {}, msgGC),
+              );
+              await xmpp.send(message);
+            }
+          }
+      
+          break;
+      
       case '6':
         console.log('Not implemented yet.');
         break;
