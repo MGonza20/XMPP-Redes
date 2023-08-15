@@ -122,12 +122,12 @@ const main = async () => {
     
     switch (mainMenuChoice) {
       case '1':
-        const {usernameLogin, passwordLogin} = getUserInfo();
+        const userInfo = getUserInfo();
         const xmpp = client({
           service: "xmpp://alumchat.xyz",
           domain: "alumchat.xyz",
-          username: usernameLogin,
-          password: passwordLogin,
+          username: userInfo.username,
+          password: userInfo.password,
         });
   
         await login(xmpp);
