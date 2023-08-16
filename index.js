@@ -20,7 +20,7 @@ const mainMenu = () => {
 
 
 const showMenuOptions = () => {
-  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Mostrar detalles de contacto de un usuario\n4. Chat one to one with user\n5. Participar en conversaciones grupales\n6. Definir mensaje de presencia\n7. Enviar/recibir notificaciones\n8. Enviar/recibir archivo\n9. Logout\n')
+  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participar en conversaciones grupales\n7. Definir mensaje de presencia\n8. Enviar/recibir notificaciones\n9. Enviar/recibir archivo\n10. Logout\n')
 }
 
 
@@ -35,6 +35,37 @@ const addContact = async (xmpp, contact_username) => {
   await xmpp.send(Iq);
 };
 
+
+const defineVCard = async (xmpp, vCardDetails) => {
+  const vCardNewDetails = xml(
+    "iq",
+    { type: "set" },
+    xml("vCard",
+      { xmlns: "vcard-temp" },
+      xml("FN", {}, vCardDetails.fullName),
+      xml("NICKNAME", {}, vCardDetails.nickname),
+      xml("EMAIL", {}, vCardDetails.email)
+      )
+  );
+  await xmpp.send(vCardNewDetails);
+};
+
+const getVCardInfo = (xmpp, contact_username) => {
+  return new Promise((resolve, reject) => {
+    const vCardIq = xml(
+      "iq",
+      { type: "get", to: `${contact_username}@alumchat.xyz` },
+      xml("vCard", { xmlns: "vcard-temp" })
+    );
+
+    xmpp.on('stanza', (stanza) => {
+      if (stanza.is('iq') && stanza.getChild('vCard')) {
+        resolve(stanza);
+      }
+    });
+    xmpp.send(vCardIq);
+  });
+};
 
 
 
@@ -65,7 +96,7 @@ const login = async (xmpp) => {
       while (true) {
         showMenuOptions();
         
-        let selectedOption = readline.question('Select a menu option (9 to exit): ');
+        let selectedOption = readline.question('Select a menu option (or 10 to exit): ');
         switch (selectedOption) {
           case '1': 
             showContactsStatus = true;
@@ -81,11 +112,33 @@ const login = async (xmpp) => {
             break;
             
           case '3':
-            console.log('Not implemented yet.');
+            const fullName = readline.question('Enter your full name: ');
+            const nickname = readline.question('Enter your nickname: ');
+            const email = readline.question('Enter your email: ');
+            const vCardDetails = { fullName, nickname, email };
+            await defineVCard(xmpp, vCardDetails);
             break;
-          case '4':
-            console.log('Not implemented yet.');
-            break;
+            
+            case '4':
+              const contact_username_vcard = readline.question('Enter the contact\'s username: ');
+              const vCardDataFields = await getVCardInfo(xmpp, contact_username_vcard);
+              
+              if (vCardDataFields.is("iq")) {
+                const vCardDets = vCardDataFields.getChild("vCard", "vcard-temp");
+                if (vCardDets) {
+                  if (vCardDets.children.length > 0) {
+                    vCardDets.children.forEach(field => {
+                      if (field && field.name && field.text) {
+                        console.log(`${field.name}: ${field.text()}`);
+                      }
+                    });
+                  } else {
+                    console.log('No details found for this contact.');
+                  }
+                } 
+              }
+              break;
+          
           case '5':
             console.log('Not implemented yet.');
             break;
@@ -98,8 +151,10 @@ const login = async (xmpp) => {
           case '8':
             console.log('Not implemented yet.');
             break;
-          
           case '9':
+            console.log('Not implemented yet.');
+            break;
+          case '10':
             console.log('Logging out...');
             xmpp.stop();
             return;
