@@ -5,10 +5,10 @@ const net = require('net');
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 const getUserInfo = () => {
-  let username = readline.question('Enter your username: ');
-  let password = readline.question('Enter your password: ');
-  // let username = 'pag20634';
-  // let password = '1234';
+  // let username = readline.question('Enter your username: ');
+  // let password = readline.question('Enter your password: ');
+  let username = 'pag20634';
+  let password = '1234';
   return { username, password };
 }
 
@@ -23,22 +23,63 @@ const showMenuOptions = () => {
   console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Mostrar detalles de contacto de un usuario\n4. Chat one to one with user\n5. Participar en conversaciones grupales\n6. Definir mensaje de presencia\n7. Enviar/recibir notificaciones\n8. Enviar/recibir archivo\n9. Logout\n')
 }
 
+
+const addContact = async (xmpp, contact_username) => {
+  const Iq = xml(
+      "iq",
+      { type: "set" },
+      xml("query", 
+          { xmlns: "jabber:iq:roster" }, 
+          xml("item", { jid: `${contact_username}@alumchat.xyz` }))
+  );
+  await xmpp.send(Iq);
+};
+
+
+
+
 const login = async (xmpp) => {
+
   return new Promise((resolve, reject) => {
     xmpp.on("online", async () => {
+
+      xmpp.on("stanza", (stanza) => {
+        if (stanza.is("presence") && stanza.attrs && stanza.attrs.from) {
+            if (showContactsStatus){
+                if (!showContactsListTitle) {
+                    console.log('\nCONTACTS LIST: \n')
+                    showContactsListTitle = true;
+                }
+                const user = stanza.attrs.from.split('@')[0];
+                const status = stanza.getChildText("status");
+                console.log(`USER: ${user} \nSTATUS: ${status || "No status"}\n`);
+            }
+        }
+    });
+    
+      let showContactsStatus = false;
+      let showContactsListTitle = false;
+
       await xmpp.send(xml("presence"));
-      
+            
       while (true) {
         showMenuOptions();
         
         let selectedOption = readline.question('Select a menu option (9 to exit): ');
         switch (selectedOption) {
-          case '1':
-            console.log('Not implemented yet.');
+          case '1': 
+            showContactsStatus = true;
+            const presenceProbe = xml( "presence", { type: "probe" });
+            await xmpp.send(presenceProbe);
+            showContactsStatus = false;
             break;
+        
           case '2':
-            console.log('Not implemented yet.');
+            const contact_username = readline.question('Enter the contact\'s username: ');
+            await addContact(xmpp, contact_username);
+            console.log(`Contact added!\n`);
             break;
+            
           case '3':
             console.log('Not implemented yet.');
             break;
@@ -57,6 +98,7 @@ const login = async (xmpp) => {
           case '8':
             console.log('Not implemented yet.');
             break;
+          
           case '9':
             console.log('Logging out...');
             xmpp.stop();
@@ -134,8 +176,8 @@ const main = async () => {
         break;
   
         case '2':
-          const {username, password} = getUserInfo();
-          await register(username, password)
+          const userInfoR = getUserInfo();
+          await register(userInfoR.username, userInfoR.password)
           break;  
   
       case '3':
