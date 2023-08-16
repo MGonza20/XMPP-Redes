@@ -5,10 +5,10 @@ const net = require('net');
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 const getUserInfo = () => {
-  // let username = readline.question('Enter your username: ');
-  // let password = readline.question('Enter your password: ');
-  let username = 'pag20634';
-  let password = '1234';
+  let username = readline.question('Enter your username: ');
+  let password = readline.question('Enter your password: ');
+  // let username = 'pag20634';
+  // let password = '1234';
   return { username, password };
 }
 
@@ -23,7 +23,7 @@ const showMenuOptions = () => {
   console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participar en conversaciones grupales\n7. Definir mensaje de presencia\n8. Enviar/recibir notificaciones\n9. Enviar/recibir archivo\n10. Logout\n')
 }
 
-
+// Function to add a contact to the roster
 const addContact = async (xmpp, contact_username) => {
   const Iq = xml(
       "iq",
@@ -35,7 +35,7 @@ const addContact = async (xmpp, contact_username) => {
   await xmpp.send(Iq);
 };
 
-
+// Function to define and get user's vCard
 const defineVCard = async (xmpp, vCardDetails) => {
   const vCardNewDetails = xml(
     "iq",
@@ -181,31 +181,29 @@ const register = (username, password) => {
     const PORT = 5222;
 
     const socket = new net.Socket();
+    const contains = (data, str) => data.toString().includes(str);
     socket.on('data', (data) => {
-      if (data.toString().includes('<stream:features')) {
-        if (data.toString().includes('http://jabber.org/features/iq-register')) {
-          const registerIq = `<iq type='set' id='reg_1'>
-                                    <query xmlns='jabber:iq:register'>
-                                      <username>${username}</username>
-                                      <password>${password}</password>
-                                    </query>
-                                  </iq>`;
-          socket.write(registerIq);
-        }
-      } else if (data.toString().includes('type="result"') && data.toString().includes('id="reg_1"')) {
+      if (contains(data, 'type="result"') && contains(data, 'id="register_id"')) {
         console.log('Successful register!!!');
         socket.destroy();
         resolve();
-      } else if (data.toString().includes('type="error"') && data.toString().includes('id="reg_1"')) {
+      } else if (contains(data, 'type="error"') && contains(data, 'id="register_id"')) {
         console.log('Fail in register.');
         socket.destroy();
         resolve();
       }
     });
-
+    
     socket.on('end', resolve);
     socket.connect(PORT, HOST, () => {
-      socket.write(`<stream:stream to="'${HOST}'" xmlns="jabber:client" xmlns:stream="http://etherx.jabber.org/streams" version="1.0">`);
+      socket.write(`<stream:stream to="'${HOST}'" xmlns="jabber:client" xmlns:stream="http://etherx.jabber.org/streams">`);
+      const registerIq = `<iq type='set' id='register_id'>
+                                <query xmlns='jabber:iq:register'>
+                                  <username>${username}</username>
+                                  <password>${password}</password>
+                                </query>
+                              </iq>`;
+      socket.write(registerIq);
     });
   });
 };
