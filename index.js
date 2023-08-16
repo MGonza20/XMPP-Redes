@@ -5,10 +5,10 @@ const net = require('net');
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
 const getUserInfo = () => {
-  let username = readline.question('Enter your username: ');
-  let password = readline.question('Enter your password: ');
-  // let username = 'pag20634';
-  // let password = '1234';
+  // let username = readline.question('Enter your username: ');
+  // let password = readline.question('Enter your password: ');
+  let username = 'pag20634';
+  let password = '1234';
   return { username, password };
 }
 
@@ -35,7 +35,7 @@ const addContact = async (xmpp, contact_username) => {
   await xmpp.send(Iq);
 };
 
-// Function to define and get user's vCard
+// Function to define, get and show user's vCard
 const defineVCard = async (xmpp, vCardDetails) => {
   const vCardNewDetails = xml(
     "iq",
@@ -66,6 +66,24 @@ const getVCardInfo = (xmpp, contact_username) => {
     xmpp.send(vCardIq);
   });
 };
+
+const showVCardInfo = (vCardDataFields) => {
+  if (vCardDataFields.is("iq")) {
+    const vCardDets = vCardDataFields.getChild("vCard", "vcard-temp");
+    if (vCardDets) {
+      if (vCardDets.children.length > 0) {
+        console.log('\n--------------   Contact\'s details   -------------\n');
+        vCardDets.children.forEach(field => {
+          if (field && field.name && field.text) {
+            console.log(`${field.name}: ${field.text()}`);
+          }
+        });
+      } else {
+        console.log('No details found for this contact.');
+      }
+    } 
+  }
+}
 
 
 
@@ -119,25 +137,11 @@ const login = async (xmpp) => {
             await defineVCard(xmpp, vCardDetails);
             break;
             
-            case '4':
-              const contact_username_vcard = readline.question('Enter the contact\'s username: ');
-              const vCardDataFields = await getVCardInfo(xmpp, contact_username_vcard);
-              
-              if (vCardDataFields.is("iq")) {
-                const vCardDets = vCardDataFields.getChild("vCard", "vcard-temp");
-                if (vCardDets) {
-                  if (vCardDets.children.length > 0) {
-                    vCardDets.children.forEach(field => {
-                      if (field && field.name && field.text) {
-                        console.log(`${field.name}: ${field.text()}`);
-                      }
-                    });
-                  } else {
-                    console.log('No details found for this contact.');
-                  }
-                } 
-              }
-              break;
+          case '4':
+            const contact_username_vcard = readline.question('Enter the contact\'s username: ');
+            const vCardDataFields = await getVCardInfo(xmpp, contact_username_vcard);
+            showVCardInfo(vCardDataFields);
+            break;
           
           case '5':
             console.log('Not implemented yet.');
