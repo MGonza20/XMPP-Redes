@@ -1,6 +1,21 @@
 const { client, xml } = require("@xmpp/client");
 const readline = require('readline-sync');
+const readlineAsync = require('readline');
 const net = require('net');
+
+const rl = readlineAsync.createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+
+const question = (query) => {
+  return new Promise((resolve) => {
+    rl.question(query, (answer) => {
+      resolve(answer);
+    });
+  });
+};
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
@@ -12,9 +27,9 @@ const getUserInfo = () => {
   return { username, password };
 }
 
-const mainMenu = () => {
+const mainMenu = async () => {
   console.log('\n--------------------   Main Menu   --------------------\n1. Login\n2. Register\n3. Exit\n')
-  let selectedOption = readline.question('Select a menu option: ');
+  let selectedOption = await question('Select a menu option: ');
   return selectedOption;
 }
 
@@ -92,7 +107,7 @@ const login = async (xmpp) => {
   return new Promise((resolve, reject) => {
     xmpp.on("online", async () => {
 
-      xmpp.on("stanza", (stanza) => {
+      await xmpp.on("stanza", (stanza) => {
         if (stanza.is("presence") && stanza.attrs && stanza.attrs.from) {
             if (showContactsStatus){
                 if (!showContactsListTitle) {
@@ -104,6 +119,11 @@ const login = async (xmpp) => {
                 console.log(`USER: ${user} \nSTATUS: ${status || "No status"}\n`);
             }
         }
+        if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
+          const from = stanza.attrs.from.split('@')[0];
+          const receivedMsg = stanza.getChildText('body');
+          console.log(`${from}: ${receivedMsg}`);
+        }
     });
     
       let showContactsStatus = false;
@@ -114,7 +134,7 @@ const login = async (xmpp) => {
       while (true) {
         showMenuOptions();
         
-        let selectedOption = readline.question('Select a menu option (or 10 to exit): ');
+        let selectedOption = await question('Select a menu option (or 10 to exit): ');
         switch (selectedOption) {
           case '1': 
             showContactsStatus = true;
@@ -144,7 +164,24 @@ const login = async (xmpp) => {
             break;
           
           case '5':
-            console.log('Not implemented yet.');
+            let receptor = readline.question('Enter the receptor\'s username: ');
+    
+            while (true) {
+              const msg = await question('Enter your message (or enter to leave chat): ');
+              if (msg === '') {
+                console.log('Exiting chat...');
+                break;
+              }
+    
+              const messageStanza = xml(
+                "message",
+                { type: "chat", to: `${receptor}@alumchat.xyz` },
+                xml("body", {}, msg)
+              );
+    
+              await xmpp.send(messageStanza);
+            }
+    
             break;
           case '6':
             console.log('Not implemented yet.');
@@ -217,7 +254,7 @@ const main = async () => {
   
   run = true;
   while (run) {
-    const mainMenuChoice = mainMenu();
+    const mainMenuChoice = await mainMenu();
     
     switch (mainMenuChoice) {
       case '1':
