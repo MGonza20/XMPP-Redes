@@ -101,33 +101,28 @@ const showVCardInfo = (vCardDataFields) => {
 }
 
 
-
 const login = async (xmpp) => {
 
   return new Promise((resolve, reject) => {
-    xmpp.on("online", async () => {
 
-      await xmpp.on("stanza", (stanza) => {
-        if (stanza.is("presence") && stanza.attrs && stanza.attrs.from) {
-            if (showContactsStatus){
-                if (!showContactsListTitle) {
-                    console.log('\nCONTACTS LIST: \n')
-                    showContactsListTitle = true;
-                }
-                const user = stanza.attrs.from.split('@')[0];
-                const status = stanza.getChildText("status");
-                console.log(`USER: ${user} \nSTATUS: ${status || "No status"}\n`);
-            }
-        }
+    xmpp.on("online", async () => {
+      
+      let contactsStatus = {};
+      xmpp.on("stanza", (stanza) => {
         if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
           const from = stanza.attrs.from.split('@')[0];
           const receivedMsg = stanza.getChildText('body');
           console.log(`${from}: ${receivedMsg}`);
         }
-    });
+        if (stanza.is('presence')) {
+          const from = stanza.attrs.from.split('@')[0];
+          const show = stanza.getChildText('show') || "online";
+          const status = stanza.getChildText('status');
+      
+          contactsStatus[from] = { show: show, status: status };
+        }
+      });
     
-      let showContactsStatus = false;
-      let showContactsListTitle = false;
 
       await xmpp.send(xml("presence"));
             
@@ -136,11 +131,11 @@ const login = async (xmpp) => {
         
         let selectedOption = await question('Select a menu option (or 10 to exit): ');
         switch (selectedOption) {
-          case '1': 
-            showContactsStatus = true;
-            const presenceProbe = xml( "presence", { type: "probe" });
-            await xmpp.send(presenceProbe);
-            showContactsStatus = false;
+          case '1':
+            console.log("\n---------- Contacts and their status ----------");
+            for (let contact in contactsStatus) {
+              console.log(`${contact}: ${contactsStatus[contact].show} - ${contactsStatus[contact].status || 'NO STATUS'}`);
+            }
             break;
         
           case '2':
@@ -164,7 +159,7 @@ const login = async (xmpp) => {
             break;
           
           case '5':
-            let receptor = readline.question('Enter the receptor\'s username: ');
+            let receptor = await question('Enter the receptor\'s username: ');
     
             while (true) {
               const msg = await question('Enter your message (or enter to leave chat): ');
@@ -198,6 +193,7 @@ const login = async (xmpp) => {
           case '10':
             console.log('Logging out...');
             xmpp.stop();
+            rl.close();
             return;
           default:
             console.log('Invalid option. Try again.');
