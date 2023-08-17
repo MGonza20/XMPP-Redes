@@ -108,9 +108,15 @@ const login = async (xmpp) => {
     xmpp.on("online", async () => {
       
       let contactsStatus = {};
+      let first
       xmpp.on("stanza", (stanza) => {
         if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
           const from = stanza.attrs.from.split('@')[0];
+          const receivedMsg = stanza.getChildText('body');
+          console.log(`\n${from}: ${receivedMsg}`);
+        }
+        if (stanza.is('message') && stanza.attrs.type === 'groupchat' && stanza.getChild('body')) {
+          const from = stanza.attrs.from.split('/')[1];
           const receivedMsg = stanza.getChildText('body');
           console.log(`${from}: ${receivedMsg}`);
         }
@@ -162,25 +168,47 @@ const login = async (xmpp) => {
             let receptor = await question('Enter the receptor\'s username: ');
     
             while (true) {
-              const msg = await question('Enter your message (or enter to leave chat): ');
+              const msg = await question('Enter your message (or press enter to end chat): ');
               if (msg === '') {
                 console.log('Exiting chat...');
                 break;
               }
     
               const messageStanza = xml(
-                "message",
-                { type: "chat", to: `${receptor}@alumchat.xyz` },
+                "message", { type: "chat", to: `${receptor}@alumchat.xyz` },
                 xml("body", {}, msg)
               );
     
               await xmpp.send(messageStanza);
             }
-    
             break;
+
           case '6':
-            console.log('Not implemented yet.');
+            const groupchat = await question('Enter the group name where you want to join: ');
+            const groupchatName = await question('Enter a group chat name for yourself: ');
+            const groupJid = `${groupchat}@conference.alumchat.xyz/${groupchatName}`;
+        
+            const presenceGroupStanza = xml("presence", { to: `${groupJid}` });
+            await xmpp.send(presenceGroupStanza);
+                
+            while (true) {
+                const groupMsg = await question('Enter a message (or press enter to leave chat): ');
+                if (groupMsg === '') {
+                    console.log('Leaving group chat...');
+                    const exitGroupPresence = xml("presence", { to: `${groupJid}`, type: "unavailable" });
+                    await xmpp.send(exitGroupPresence);
+                    break;
+                }
+        
+                const groupMessageStanza = xml(
+                  "message", { type: "groupchat", to: `${groupchat}@conference.alumchat.xyz` },
+                  xml("body", {}, groupMsg)
+                );
+        
+                await xmpp.send(groupMessageStanza);
+            }
             break;
+
           case '7':
             console.log('Not implemented yet.');
             break;
