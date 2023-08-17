@@ -35,7 +35,7 @@ const mainMenu = async () => {
 
 
 const showMenuOptions = () => {
-  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participar en conversaciones grupales\n7. Definir mensaje de presencia\n8. Enviar/recibir notificaciones\n9. Enviar/recibir archivo\n10. Logout\n')
+  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participate in group conversations\n7. Define presence message\n8. Enviar/recibir notificaciones\n9. Enviar/recibir archivo\n10. Logout\n')
 }
 
 // Function to add a contact to the roster
@@ -101,7 +101,7 @@ const showVCardInfo = (vCardDataFields) => {
 }
 
 
-const login = async (xmpp) => {
+const login = async (xmpp, username) => {
 
   return new Promise((resolve, reject) => {
 
@@ -109,12 +109,12 @@ const login = async (xmpp) => {
       
       let contactsStatus = {};
       let receptorC = '';
-      let case5 = false;
-      
+      let options5 = false;
+
       xmpp.on("stanza", (stanza) => {
         if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
           const from = stanza.attrs.from.split('@')[0];
-          if (from === receptorC && case5) {
+          if (from === receptorC && option5) {
             const receivedMsg = stanza.getChildText('body');
             console.log(`\n${from}: ${receivedMsg}`);
           }
@@ -126,10 +126,15 @@ const login = async (xmpp) => {
         }
         if (stanza.is('presence')) {
           const from = stanza.attrs.from.split('@')[0];
-          const show = stanza.getChildText('show') || "online";
-          const status = stanza.getChildText('status');
-      
-          contactsStatus[from] = { show: show, status: status };
+          if( from != username) {
+            if(stanza.attrs.type === 'unavailable') {
+              contactsStatus[from] = { show: "offline" };
+            } else {
+              const statusMsg = stanza.getChildText('status') || "NO STATUS MESSAGE";
+              const show = stanza.getChildText('show') || "online";      
+              contactsStatus[from] = { show: show, statusMsg: statusMsg };
+            }
+          }
         }
       });
     
@@ -144,7 +149,7 @@ const login = async (xmpp) => {
           case '1':
             console.log("\n---------- Contacts and their status ----------");
             for (let contact in contactsStatus) {
-              console.log(`${contact}: ${contactsStatus[contact].show} - ${contactsStatus[contact].status || 'NO STATUS'}`);
+              console.log(`${contact}: ${contactsStatus[contact].show} - ${contactsStatus[contact].statusMsg}`);
             }
             break;
         
@@ -171,13 +176,13 @@ const login = async (xmpp) => {
           case '5':
             let receptor = await question('Enter the receptor\'s username: ');
             receptorC = receptor;
-            case5 = true;
+            option5 = true;
     
             while (true) {
               const msg = await question('Enter your message (or press enter to end chat): ');
               if (msg === '') {
                 console.log('Exiting chat...');
-                case5 = false;
+                option5 = false;
                 break;
               }
     
@@ -217,8 +222,11 @@ const login = async (xmpp) => {
             break;
 
           case '7':
-            console.log('Not implemented yet.');
+            const presenceMsg = await question('Enter your desired presence message: ');
+            const presenceMsgStanza = xml("presence", {}, xml("status", {}, presenceMsg));
+            await xmpp.send(presenceMsgStanza);
             break;
+
           case '8':
             console.log('Not implemented yet.');
             break;
@@ -297,7 +305,7 @@ const main = async () => {
           password: userInfo.password,
         });
   
-        await login(xmpp);
+        await login(xmpp, userInfo.username);
         break;
   
         case '2':
