@@ -108,12 +108,16 @@ const login = async (xmpp) => {
     xmpp.on("online", async () => {
       
       let contactsStatus = {};
-      let first
+      let receptorC = '';
+      let case5 = false;
+      
       xmpp.on("stanza", (stanza) => {
         if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
           const from = stanza.attrs.from.split('@')[0];
-          const receivedMsg = stanza.getChildText('body');
-          console.log(`\n${from}: ${receivedMsg}`);
+          if (from === receptorC && case5) {
+            const receivedMsg = stanza.getChildText('body');
+            console.log(`\n${from}: ${receivedMsg}`);
+          }
         }
         if (stanza.is('message') && stanza.attrs.type === 'groupchat' && stanza.getChild('body')) {
           const from = stanza.attrs.from.split('/')[1];
@@ -166,11 +170,14 @@ const login = async (xmpp) => {
           
           case '5':
             let receptor = await question('Enter the receptor\'s username: ');
+            receptorC = receptor;
+            case5 = true;
     
             while (true) {
               const msg = await question('Enter your message (or press enter to end chat): ');
               if (msg === '') {
                 console.log('Exiting chat...');
+                case5 = false;
                 break;
               }
     
