@@ -48,6 +48,9 @@ const addContact = async (xmpp, contact_username) => {
           xml("item", { jid: `${contact_username}@alumchat.xyz` }))
   );
   await xmpp.send(Iq);
+  
+  const handshake = xml( "presence", { type: "subscribe", to: `${contact_username}@alumchat.xyz` });
+  await xmpp.send(handshake);
 };
 
 // Function to define, get and show user's vCard
@@ -111,7 +114,7 @@ const login = async (xmpp, username) => {
       let receptorC = '';
       let options5 = false;
 
-      xmpp.on("stanza", (stanza) => {
+      xmpp.on("stanza", async (stanza) => {
         if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
           const from = stanza.attrs.from.split('@')[0];
           if (from === receptorC && option5) {
@@ -135,6 +138,11 @@ const login = async (xmpp, username) => {
               contactsStatus[from] = { show: show, statusMsg: statusMsg };
             }
           }
+        }
+        if (stanza.is('presence') && stanza.attrs.type === 'subscribe') {
+          const from = stanza.attrs.from;
+          const presence = xml("presence", { type: "subscribed", to: from });
+          await xmpp.send(presence);
         }
       });
     
