@@ -112,14 +112,29 @@ const login = async (xmpp, username) => {
       
       let contactsStatus = {};
       let receptorC = '';
-      let options5 = false;
+      let option5 = false;
+      let newMessages = {};
 
       xmpp.on("stanza", async (stanza) => {
         if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
-          const from = stanza.attrs.from.split('@')[0];
-          if (from === receptorC && option5) {
-            const receivedMsg = stanza.getChildText('body');
-            console.log(`\n${from}: ${receivedMsg}`);
+          if (stanza.getChild('body').children.length > 0) {
+            const from = stanza.attrs.from.split('@')[0];
+            newMessages[from] = newMessages[from] ? [...newMessages[from], stanza.getChildText('body')] : 
+                                [stanza.getChildText('body')];
+                                
+            for (contact in newMessages) {
+              if (newMessages[contact].length > 1) {
+                console.log(`\nYou have ${newMessages[contact].length} new messages from ${contact}`);
+              } else if (newMessages[contact].length === 1){
+                console.log(`\nYou have a new message from ${contact}!`);
+              }
+            }
+
+
+            if (from === receptorC && option5) {
+              const receivedMsg = stanza.getChildText('body');
+              console.log(`\n${from}: ${receivedMsg}`);
+            }
           }
         }
         if (stanza.is('message') && stanza.attrs.type === 'groupchat' && stanza.getChild('body')) {
@@ -185,6 +200,14 @@ const login = async (xmpp, username) => {
             let receptor = await question('Enter the receptor\'s username: ');
             receptorC = receptor;
             option5 = true;
+
+            if (newMessages[receptor]) {
+              for (let i = 0; i < newMessages[receptor].length; i++) {
+                console.log(`${receptor}: ${newMessages[receptor][i]}`);
+              }
+              newMessages[receptor] = [];
+            }
+
     
             while (true) {
               const msg = await question('Enter your message (or press enter to end chat): ');
@@ -236,7 +259,7 @@ const login = async (xmpp, username) => {
             break;
 
           case '8':
-            console.log('Not implemented yet.');
+            console.log(newMessages);
             break;
           case '9':
             console.log('Not implemented yet.');
