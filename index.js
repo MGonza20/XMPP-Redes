@@ -155,12 +155,8 @@ const login = async (xmpp, username) => {
       let option5 = false;
       let newMessages = {};
 
-      const iqAllContacts = xml(
-        'iq',
-        { type: 'get' },
-        xml('query', { xmlns: 'jabber:iq:roster' })
-    );
-          xmpp.send(iqAllContacts);
+      const iqAllContacts = xml( 'iq', { type: 'get' }, xml('query', { xmlns: 'jabber:iq:roster' }));
+      xmpp.send(iqAllContacts);
 
 
       xmpp.on("stanza", async (stanza) => {
