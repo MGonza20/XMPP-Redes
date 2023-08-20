@@ -240,14 +240,18 @@ const login = async (xmpp, username) => {
         let selectedOption = await question('Select a menu option (or 10 to exit): ');
         switch (selectedOption) {
           case '1':
-            console.log("\n---------- Contacts and their status ----------");
-            for (let contact in contactsStatus) {
-              if (contactsStatus[contact].statusMsg){
-                console.log(`${contact}: ${contactsStatus[contact].show} - ${contactsStatus[contact].statusMsg}`);
-              } else{
-                console.log(`${contact}: ${contactsStatus[contact].show}`);
+            if (Object.keys(contactsStatus).length > 0) {
+              console.log("\n---------- Contacts and their status ----------");
+              for (let contact in contactsStatus) {
+                if (contactsStatus[contact].statusMsg){
+                  console.log(`${contact}: ${contactsStatus[contact].show} - ${contactsStatus[contact].statusMsg}`);
+                } else{
+                  console.log(`${contact}: ${contactsStatus[contact].show}`);
+                }
               }
-            }
+            } else {
+              console.log('You have no contacts yet.');
+            };
             break;
         
           case '2':
