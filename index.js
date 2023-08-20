@@ -2,6 +2,9 @@ const { client, xml } = require("@xmpp/client");
 const readline = require('readline-sync');
 const readlineAsync = require('readline');
 const net = require('net');
+const fs = require('fs');
+const path = require('path');
+const axios = require('axios');
 
 const rl = readlineAsync.createInterface({
   input: process.stdin,
@@ -35,7 +38,7 @@ const mainMenu = async () => {
 
 
 const showMenuOptions = () => {
-  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participate in group conversations\n7. Define presence message\n8. Enviar/recibir notificaciones\n9. Enviar/recibir archivo\n10. Logout\n')
+  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participate in group conversations\n7. Define presence message\n8. Enviar/recibir archivo\n9. Logout\n')
 }
 
 // Function to add a contact to the roster
@@ -104,6 +107,43 @@ const showVCardInfo = (vCardDataFields) => {
 }
 
 
+const uploadSlot = async (xmpp, filename, filesize) => {
+  return new Promise((resolve, reject) => {
+      const requestStanza = xml(
+          "iq", { type: "get", to: "httpfileupload.alumchat.xyz", id: "slot_id" },
+          xml("request", { xmlns: "urn:xmpp:http:upload:0", filename: filename, size: filesize, contentType: "image/jpeg" })
+      );
+
+      const rsStanza = (stanza) => {
+          if (stanza.attrs.type === 'result' && stanza.is('iq') && stanza.attrs.id === 'slot_id') {
+              xmpp.off('stanza', rsStanza); 
+              resolve(stanza);
+          }
+      };
+      
+      xmpp.on('stanza', rsStanza);
+      xmpp.send(requestStanza).catch((error) => {
+          xmpp.off('stanza', rsStanza);  
+          reject(error);
+      });
+  });
+}
+
+
+const uploadFile = async (filePath, putUrl) => {
+  try {
+      const data = fs.createReadStream(filePath);
+      await axios.put(putUrl, data, { headers: { "Content-Type": "application/octet-stream" }});
+      console.log("File uploaded");
+  } catch (error) {
+      console.error("Failed to upload file:", error);
+  }
+}
+
+
+
+
+
 const login = async (xmpp, username) => {
 
   return new Promise((resolve, reject) => {
@@ -121,7 +161,7 @@ const login = async (xmpp, username) => {
             const from = stanza.attrs.from.split('@')[0];
             newMessages[from] = newMessages[from] ? [...newMessages[from], stanza.getChildText('body')] : 
                                 [stanza.getChildText('body')];
-                                
+
             for (contact in newMessages) {
               if (newMessages[contact].length > 1) {
                 console.log(`\nYou have ${newMessages[contact].length} new messages from ${contact}`);
@@ -167,7 +207,7 @@ const login = async (xmpp, username) => {
       while (true) {
         showMenuOptions();
         
-        let selectedOption = await question('Select a menu option (or 10 to exit): ');
+        let selectedOption = await question('Select a menu option (or 9 to exit): ');
         switch (selectedOption) {
           case '1':
             console.log("\n---------- Contacts and their status ----------");
@@ -259,12 +299,23 @@ const login = async (xmpp, username) => {
             break;
 
           case '8':
-            console.log(newMessages);
+            const filePath = await question('Enter the file path: ');
+            const filename = path.basename(filePath);
+            const filesize = fs.statSync(filePath).size;
+            
+            try {
+              const responseStanza = await uploadSlot(xmpp, filename, filesize);
+              console.log("Success:", responseStanza.toString());
+              const putUrl = responseStanza.getChild("slot").getChild("put").attrs.url;
+              const getUrl = responseStanza.getChild("slot").getChild("get").attrs.url;
+              await uploadFile(filePath, putUrl);
+              console.log("Link:", getUrl);
+            } catch (error) {
+              console.error("Error:", error);
+            }
             break;
+
           case '9':
-            console.log('Not implemented yet.');
-            break;
-          case '10':
             console.log('Logging out...');
             xmpp.stop();
             rl.close();
