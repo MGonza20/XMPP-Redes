@@ -155,6 +155,14 @@ const login = async (xmpp, username) => {
       let option5 = false;
       let newMessages = {};
 
+      const iqAllContacts = xml(
+        'iq',
+        { type: 'get' },
+        xml('query', { xmlns: 'jabber:iq:roster' })
+    );
+          xmpp.send(iqAllContacts);
+
+
       xmpp.on("stanza", async (stanza) => {
         if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
           if (stanza.getChild('body').children.length > 0) {
@@ -182,18 +190,31 @@ const login = async (xmpp, username) => {
           const receivedMsg = stanza.getChildText('body');
           console.log(`${from}: ${receivedMsg}`);
         }
+        if (stanza.is('iq') && stanza.attrs.type === 'result') {
+          const query = stanza.getChild('query');
+          if (query && query.attrs.xmlns === 'jabber:iq:roster') {
+            query.getChildren('item').forEach(item => {
+              const jid = item.attrs.jid.split('@')[0];
+              contactsStatus[jid] = { show: "offline", statusMsg: '', init: true }; 
+            })
+          }
+        }  
         if (stanza.is('presence')) {
           const from = stanza.attrs.from.split('@')[0];
-          if( from != username) {
-            if(stanza.attrs.type === 'unavailable') {
-              contactsStatus[from] = { show: "offline" };
-            } else {
-              const statusMsg = stanza.getChildText('status') || "NO STATUS MESSAGE";
-              const show = stanza.getChildText('show') || "online";      
-              contactsStatus[from] = { show: show, statusMsg: statusMsg };
-            }
+          if (from !== username) {
+            const statusMsg = stanza.getChildText('status') || '';
+            let show = stanza.attrs.type === 'unavailable' ? 'offline' : stanza.getChildText('show') || 'online';
+            if (contactsStatus[from].init !== true) {
+              console.log(`${from} changed status`);
+              contactsStatus[from] = { ...contactsStatus[from], show: show, statusMsg: statusMsg };
+            }             
+            else {
+              contactsStatus[from] = { show: show, statusMsg: statusMsg, init: false };
+            } 
           }
-        }
+      }
+            
+      
         if (stanza.is('presence') && stanza.attrs.type === 'subscribe') {
           const from = stanza.attrs.from;
           const presence = xml("presence", { type: "subscribed", to: from });
@@ -212,7 +233,11 @@ const login = async (xmpp, username) => {
           case '1':
             console.log("\n---------- Contacts and their status ----------");
             for (let contact in contactsStatus) {
-              console.log(`${contact}: ${contactsStatus[contact].show} - ${contactsStatus[contact].statusMsg}`);
+              if (contactsStatus[contact].statusMsg){
+                console.log(`${contact}: ${contactsStatus[contact].show} - ${contactsStatus[contact].statusMsg}`);
+              } else{
+                console.log(`${contact}: ${contactsStatus[contact].show}`);
+              }
             }
             break;
         
