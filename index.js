@@ -212,9 +212,8 @@ const login = async (xmpp, username) => {
               contactsStatus[from] = { show: show, statusMsg: statusMsg, init: false };
             } 
           }
-      }
-            
-      
+        }
+
         if (stanza.is('presence') && stanza.attrs.type === 'subscribe') {
           const from = stanza.attrs.from;
           const presence = xml("presence", { type: "subscribed", to: from });
