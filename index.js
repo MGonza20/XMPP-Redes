@@ -25,7 +25,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 const getUserInfo = () => {
   // let username = readline.question('Enter your username: ');
   // let password = readline.question('Enter your password: ');
-  let username = 'pag20634';
+  let username = 'abc';
   let password = '1234';
   return { username, password };
 }
@@ -38,7 +38,7 @@ const mainMenu = async () => {
 
 
 const showMenuOptions = () => {
-  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participate in group conversations\n7. Define presence message\n8. Enviar/recibir archivo\n9. Logout\n')
+  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participate in group conversations\n7. Define presence message\n8. Enviar/recibir archivo\n9. Delete account\n10. Logout\n')
 }
 
 // Function to add a contact to the roster
@@ -140,6 +140,28 @@ const uploadFile = async (filePath, putUrl) => {
   }
 }
 
+const deleteAccount = async (xmpp) => {
+  return new Promise((resolve, reject) => {
+    const deleteStanza = xml( "iq", { type: "set", id: "delete_id" },
+                         xml("query", { xmlns: "jabber:iq:register" },
+                         xml("remove")) );
+
+    const response = (stanza) => {
+      if (stanza.is('iq') && stanza.attrs.id === 'delete_id') {
+        if (stanza.attrs.type === 'result') {
+          resolve('Account deleted.');
+        } else if (stanza.attrs.type === 'error') {
+          reject('Error deleting account.');
+        }
+      }
+    };
+
+    xmpp.on('stanza', response);
+    xmpp.send(deleteStanza);
+  });
+};
+
+
 
 
 
@@ -173,8 +195,6 @@ const login = async (xmpp, username) => {
                 console.log(`\nYou have a new message from ${contact}!`);
               }
             }
-
-
             if (from === receptorC && option5) {
               const receivedMsg = stanza.getChildText('body');
               console.log(`\n${from}: ${receivedMsg}`);
@@ -336,6 +356,17 @@ const login = async (xmpp, username) => {
             break;
 
           case '9':
+            try {
+              const response = await deleteAccount(xmpp);
+              console.log(response);
+              xmpp.stop(); 
+              process.exit();
+            } catch (error) {
+              console.error(error);
+            }
+            break;
+
+          case '10':
             console.log('Logging out...');
             xmpp.stop();
             rl.close();
@@ -418,6 +449,7 @@ const main = async () => {
       case '3':
         console.log('Goodbye! Leaving XMPP chat...\n');
         run = false;
+        rl.close();
         return;
   
       default:
