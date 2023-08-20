@@ -6,17 +6,11 @@ const fs = require('fs');
 const path = require('path');
 const axios = require('axios');
 
-const rl = readlineAsync.createInterface({
-  input: process.stdin,
-  output: process.stdout
-});
-
+const rl = readlineAsync.createInterface({ input: process.stdin, output: process.stdout });
 
 const question = (query) => {
   return new Promise((resolve) => {
-    rl.question(query, (answer) => {
-      resolve(answer);
-    });
+    rl.question(query, (answer) => { resolve(answer) });
   });
 };
 
@@ -25,7 +19,7 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 const getUserInfo = () => {
   // let username = readline.question('Enter your username: ');
   // let password = readline.question('Enter your password: ');
-  let username = 'abc';
+  let username = 'pag20634';
   let password = '1234';
   return { username, password };
 }
@@ -220,7 +214,7 @@ const login = async (xmpp, username) => {
           if (from !== username) {
             const statusMsg = stanza.getChildText('status') || '';
             let show = stanza.attrs.type === 'unavailable' ? 'offline' : stanza.getChildText('show') || 'online';
-            if (contactsStatus[from].init !== true) {
+            if (contactsStatus[from] && contactsStatus[from].init !== true) {
               console.log(`${from} changed status`);
               contactsStatus[from] = { ...contactsStatus[from], show: show, statusMsg: statusMsg };
             }             
@@ -243,7 +237,7 @@ const login = async (xmpp, username) => {
       while (true) {
         showMenuOptions();
         
-        let selectedOption = await question('Select a menu option (or 9 to exit): ');
+        let selectedOption = await question('Select a menu option (or 10 to exit): ');
         switch (selectedOption) {
           case '1':
             console.log("\n---------- Contacts and their status ----------");
@@ -257,9 +251,8 @@ const login = async (xmpp, username) => {
             break;
         
           case '2':
-            const contact_username = readline.question('Enter the contact\'s username: ');
+            const contact_username = await question('Enter the contact\'s username: ');
             await addContact(xmpp, contact_username);
-            console.log(`Contact added!\n`);
             break;
             
           case '3':
