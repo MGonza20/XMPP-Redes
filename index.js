@@ -216,7 +216,7 @@ const login = async (xmpp, username) => {
             let show = stanza.attrs.type === 'unavailable' ? 'offline' : stanza.getChildText('show') || 'online';
             if (contactsStatus[from] && contactsStatus[from].init !== true) {
               if (contactsStatus[from].show !== show || contactsStatus[from].statusMsg !== statusMsg) {
-                console.log(`${from} changed status ${show} - ${statusMsg}`);
+                console.log(`${from} changed status`);
               }
               contactsStatus[from] = { ...contactsStatus[from], show: show, statusMsg: statusMsg };
             }             
