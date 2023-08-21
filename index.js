@@ -1,5 +1,4 @@
 const { client, xml } = require("@xmpp/client");
-const readline = require('readline-sync');
 const readlineAsync = require('readline');
 const net = require('net');
 const fs = require('fs');
@@ -8,19 +7,19 @@ const axios = require('axios');
 
 const rl = readlineAsync.createInterface({ input: process.stdin, output: process.stdout });
 
-const question = (query) => {
+const question = (input) => {
   return new Promise((resolve) => {
-    rl.question(query, (answer) => { resolve(answer) });
+    rl.question(input, (output) => { resolve(output) });
   });
 };
 
 process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 
-const getUserInfo = () => {
-  // let username = readline.question('Enter your username: ');
-  // let password = readline.question('Enter your password: ');
-  let username = 'pag20634';
-  let password = '1234';
+const getUserInfo = async () => {
+  let username = await question('Enter your username: ');
+  let password = await question('Enter your password: ');
+  // let username = 'pag20634';
+  // let password = '1234';
   return { username, password };
 }
 
@@ -94,7 +93,7 @@ const showVCardInfo = (vCardDataFields) => {
           }
         });
       } else {
-        console.log('No details found for this contact.');
+        console.log('No v-card details found for this contact.');
       }
     } 
   }
@@ -263,17 +262,25 @@ const login = async (xmpp, username) => {
             break;
             
           case '3':
-            const fullName = readline.question('Enter your full name: ');
-            const nickname = readline.question('Enter your nickname: ');
-            const email = readline.question('Enter your email: ');
+            const fullName = await question('Enter your full name: ');
+            const nickname = await question('Enter your nickname: ');
+            const email = await question('Enter your email: ');
             const vCardDetails = { fullName, nickname, email };
             await defineVCard(xmpp, vCardDetails);
             break;
             
           case '4':
-            const contact_username_vcard = readline.question('Enter the contact\'s username: ');
+            const contact_username_vcard = await question('Enter the contact\'s username: ');
             const vCardDataFields = await getVCardInfo(xmpp, contact_username_vcard);
             showVCardInfo(vCardDataFields);
+            if (contactsStatus[contact_username_vcard]){
+              console.log('Status: ', contactsStatus[contact_username_vcard].show);
+              if (contactsStatus[contact_username_vcard].statusMsg) {
+                console.log('Status message: ', contactsStatus[contact_username_vcard].statusMsg);
+              }
+            } else {
+              console.log('This user is not in your contacts.');
+            }
             break;
           
           case '5':
@@ -430,7 +437,7 @@ const main = async () => {
     
     switch (mainMenuChoice) {
       case '1':
-        const userInfo = getUserInfo();
+        const userInfo = await getUserInfo();
         const xmpp = client({
           service: "xmpp://alumchat.xyz",
           domain: "alumchat.xyz",
