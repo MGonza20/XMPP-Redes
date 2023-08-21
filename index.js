@@ -215,7 +215,9 @@ const login = async (xmpp, username) => {
             const statusMsg = stanza.getChildText('status') || '';
             let show = stanza.attrs.type === 'unavailable' ? 'offline' : stanza.getChildText('show') || 'online';
             if (contactsStatus[from] && contactsStatus[from].init !== true) {
-              console.log(`${from} changed status`);
+              if (contactsStatus[from].show !== show || contactsStatus[from].statusMsg !== statusMsg) {
+                console.log(`${from} changed status ${show} - ${statusMsg}`);
+              }
               contactsStatus[from] = { ...contactsStatus[from], show: show, statusMsg: statusMsg };
             }             
             else {
@@ -257,6 +259,7 @@ const login = async (xmpp, username) => {
           case '2':
             const contact_username = await question('Enter the contact\'s username: ');
             await addContact(xmpp, contact_username);
+            contactsStatus[contact_username] = { show: "offline", statusMsg: '', init: true };
             break;
             
           case '3':
