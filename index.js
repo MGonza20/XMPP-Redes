@@ -162,7 +162,6 @@ const deleteAccount = async (xmpp) => {
 const login = async (xmpp, username) => {
 
   return new Promise((resolve, reject) => {
-
     xmpp.on("online", async () => {
       
       let contactsStatus = {};
@@ -182,10 +181,12 @@ const login = async (xmpp, username) => {
                                 [stanza.getChildText('body')];
 
             for (contact in newMessages) {
-              if (newMessages[contact].length > 1) {
-                console.log(`\nYou have ${newMessages[contact].length} new messages from ${contact}`);
-              } else if (newMessages[contact].length === 1){
-                console.log(`\nYou have a new message from ${contact}!`);
+              if (!option5){
+                if (newMessages[contact].length > 1) {
+                  console.log(`\nYou have ${newMessages[contact].length} new messages from ${contact}!`);
+                } else if (newMessages[contact].length === 1){
+                  console.log(`\nYou have a new message from ${contact}!`);
+                }
               }
             }
             if (from === receptorC && option5) {
@@ -194,6 +195,7 @@ const login = async (xmpp, username) => {
             }
           }
         }
+        
         if (stanza.is('message') && stanza.attrs.type === 'groupchat' && stanza.getChild('body')) {
           const from = stanza.attrs.from.split('/')[1];
           const receivedMsg = stanza.getChildText('body');
@@ -204,24 +206,30 @@ const login = async (xmpp, username) => {
           if (query && query.attrs.xmlns === 'jabber:iq:roster') {
             query.getChildren('item').forEach(item => {
               const jid = item.attrs.jid.split('@')[0];
-              contactsStatus[jid] = { show: "offline", statusMsg: '', init: true }; 
+              const veri = item.attrs.jid.split('@')[1];
+              if (!(veri.includes('conference'))){
+                contactsStatus[jid] = { show: "offline", statusMsg: '', init: true }; 
+              }
             })
           }
         }  
         if (stanza.is('presence')) {
           const from = stanza.attrs.from.split('@')[0];
-          if (from !== username) {
-            const statusMsg = stanza.getChildText('status') || '';
-            let show = stanza.attrs.type === 'unavailable' ? 'offline' : stanza.getChildText('show') || 'online';
-            if (contactsStatus[from] && contactsStatus[from].init !== true) {
-              if (contactsStatus[from].show !== show || contactsStatus[from].statusMsg !== statusMsg) {
-                console.log(`${from} changed status`);
-              }
-              contactsStatus[from] = { ...contactsStatus[from], show: show, statusMsg: statusMsg };
-            }             
-            else {
-              contactsStatus[from] = { show: show, statusMsg: statusMsg, init: false };
-            } 
+          const veri2 = stanza.attrs.from.split('@')[1];
+          if (!(veri2.includes('conference'))){
+            if (from !== username) {
+              const statusMsg = stanza.getChildText('status') || '';
+              let show = stanza.attrs.type === 'unavailable' ? 'offline' : stanza.getChildText('show') || 'online';
+              if (contactsStatus[from] && contactsStatus[from].init !== true) {
+                if (contactsStatus[from].show !== show || contactsStatus[from].statusMsg !== statusMsg) {
+                  console.log(`${from} changed status`);
+                }
+                contactsStatus[from] = { ...contactsStatus[from], show: show, statusMsg: statusMsg };
+              }             
+              else {
+                contactsStatus[from] = { show: show, statusMsg: statusMsg, init: false };
+              } 
+            }
           }
         }
 
@@ -295,7 +303,6 @@ const login = async (xmpp, username) => {
               newMessages[receptor] = [];
             }
 
-    
             while (true) {
               const msg = await question('Enter your message (or press enter to end chat): ');
               if (msg === '') {
@@ -449,7 +456,7 @@ const main = async () => {
         break;
   
         case '2':
-          const userInfoR = getUserInfo();
+          const userInfoR = await getUserInfo();
           await register(userInfoR.username, userInfoR.password)
           break;  
   
