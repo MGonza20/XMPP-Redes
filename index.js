@@ -1,12 +1,12 @@
 const { client, xml } = require("@xmpp/client");
 const readlineAsync = require('readline');
 const net = require('net');
-const fs = require('fs');
-const path = require('path');
-const axios = require('axios');
 
+// async readline to be able to use await and async in the question method
+// also to handle async functions
 const rl = readlineAsync.createInterface({ input: process.stdin, output: process.stdout });
 
+// async function to be able to use await and async in the question method
 const question = (input) => {
   return new Promise((resolve) => {
     rl.question(input, (output) => { resolve(output) });
@@ -31,17 +31,23 @@ const mainMenu = async () => {
 
 
 const showMenuOptions = () => {
-  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participate in group conversations\n7. Define presence message\n8. Enviar/recibir archivo\n9. Delete account\n10. Logout\n')
+  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participate in group conversations\n7. Define presence message\n\n8. Delete account\n9. Logout\n')
 }
 
-// Function to add a contact to the roster
+
+/**
+ * Method to add a contact to the roster
+ * @param {Object} xmpp - XMPP client
+ * @param {String} contact_username - Contact's username to be added
+ * 
+ * In order to add a contact is necessary to send an IQ stanza adding the contact to the roster
+ * and a handshake to be able to subscribe to the contact's presence.
+ **/
 const addContact = async (xmpp, contact_username) => {
   const Iq = xml(
-      "iq",
-      { type: "set" },
-      xml("query", 
-          { xmlns: "jabber:iq:roster" }, 
-          xml("item", { jid: `${contact_username}@alumchat.xyz` }))
+      "iq", { type: "set" },
+      xml("query", { xmlns: "jabber:iq:roster" }, 
+      xml("item", { jid: `${contact_username}@alumchat.xyz` }))
   );
   await xmpp.send(Iq);
   
@@ -49,28 +55,31 @@ const addContact = async (xmpp, contact_username) => {
   await xmpp.send(handshake);
 };
 
-// Function to define, get and show user's vCard
+/**
+ * Method to define the user's vCard details (full name, nickname and email)
+ * @param {Object} xmpp 
+ * @param {Object} vCardDetails
+ * Sending an IQ stanza with the user's details
+ */
 const defineVCard = async (xmpp, vCardDetails) => {
-  const vCardNewDetails = xml(
-    "iq",
-    { type: "set" },
-    xml("vCard",
-      { xmlns: "vcard-temp" },
-      xml("FN", {}, vCardDetails.fullName),
-      xml("NICKNAME", {}, vCardDetails.nickname),
-      xml("EMAIL", {}, vCardDetails.email)
-      )
-  );
+  const vCardNewDetails = xml("iq",{ type: "set" },
+                          xml("vCard", { xmlns: "vcard-temp" },
+                          xml("FN", {}, vCardDetails.fullName),
+                          xml("NICKNAME", {}, vCardDetails.nickname),
+                          xml("EMAIL", {}, vCardDetails.email)));
   await xmpp.send(vCardNewDetails);
 };
 
+/**
+ * Function to get the vCard details of a contact
+ * @param {Object} xmpp
+ * @param {String} contact_username
+ * @returns {Object} vCard details response stanza
+ **/
 const getVCardInfo = (xmpp, contact_username) => {
   return new Promise((resolve, reject) => {
-    const vCardIq = xml(
-      "iq",
-      { type: "get", to: `${contact_username}@alumchat.xyz` },
-      xml("vCard", { xmlns: "vcard-temp" })
-    );
+    const vCardIq = xml( "iq", { type: "get", to: `${contact_username}@alumchat.xyz` },
+                    xml("vCard", { xmlns: "vcard-temp" }));
 
     xmpp.on('stanza', (stanza) => {
       if (stanza.is('iq') && stanza.getChild('vCard')) {
@@ -81,6 +90,11 @@ const getVCardInfo = (xmpp, contact_username) => {
   });
 };
 
+/**
+ * Method to show the vCard details of a contact
+ * @param {Object} vCardDataFields
+ * Created to ease the process of showing the vCard details of a contact
+ **/
 const showVCardInfo = (vCardDataFields) => {
   if (vCardDataFields.is("iq")) {
     const vCardDets = vCardDataFields.getChild("vCard", "vcard-temp");
@@ -99,40 +113,11 @@ const showVCardInfo = (vCardDataFields) => {
   }
 }
 
-
-const uploadSlot = async (xmpp, filename, filesize) => {
-  return new Promise((resolve, reject) => {
-      const requestStanza = xml(
-          "iq", { type: "get", to: "httpfileupload.alumchat.xyz", id: "slot_id" },
-          xml("request", { xmlns: "urn:xmpp:http:upload:0", filename: filename, size: filesize, contentType: "image/jpeg" })
-      );
-
-      const rsStanza = (stanza) => {
-          if (stanza.attrs.type === 'result' && stanza.is('iq') && stanza.attrs.id === 'slot_id') {
-              xmpp.off('stanza', rsStanza); 
-              resolve(stanza);
-          }
-      };
-      
-      xmpp.on('stanza', rsStanza);
-      xmpp.send(requestStanza).catch((error) => {
-          xmpp.off('stanza', rsStanza);  
-          reject(error);
-      });
-  });
-}
-
-
-const uploadFile = async (filePath, putUrl) => {
-  try {
-      const data = fs.createReadStream(filePath);
-      await axios.put(putUrl, data, { headers: { "Content-Type": "application/octet-stream" }});
-      console.log("File uploaded");
-  } catch (error) {
-      console.error("Failed to upload file:", error);
-  }
-}
-
+/**
+ * Function to delete an specific account
+ * @param {Object} xmpp 
+ * @returns {String} response - Response of the server after deleting the account
+ */
 const deleteAccount = async (xmpp) => {
   return new Promise((resolve, reject) => {
     const deleteStanza = xml( "iq", { type: "set", id: "delete_id" },
@@ -156,7 +141,11 @@ const deleteAccount = async (xmpp) => {
 
 
 
-
+/**
+ * Function to login to the XMPP server
+ * @param {Object} xmpp 
+ * @param {String} username 
+ */
 
 
 const login = async (xmpp, username) => {
@@ -164,22 +153,27 @@ const login = async (xmpp, username) => {
   return new Promise((resolve, reject) => {
     xmpp.on("online", async () => {
       
-      let contactsStatus = {};
-      let receptorC = '';
-      let option5 = false;
-      let newMessages = {};
+      let contactsStatus = {}; // Object to store the contacts and their status
+      let receptorC = ''; // Variable to store the receptor of the chat
+      let option5 = false; // Variable flag to know if the user is in a chat or not
+      let newMessages = {}; // Object to store the new messages received to 
+                            // handle notifications and show them when the user enters the chat
 
+      // Initially getting all the contacts from the roster
       const iqAllContacts = xml( 'iq', { type: 'get' }, xml('query', { xmlns: 'jabber:iq:roster' }));
       xmpp.send(iqAllContacts);
 
 
       xmpp.on("stanza", async (stanza) => {
+
+        // stanza to handle one to one chat messages
         if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
           if (stanza.getChild('body').children.length > 0) {
             const from = stanza.attrs.from.split('@')[0];
             newMessages[from] = newMessages[from] ? [...newMessages[from], stanza.getChildText('body')] : 
                                 [stanza.getChildText('body')];
 
+            // handling new messages notifications
             for (contact in newMessages) {
               if (!option5){
                 if (newMessages[contact].length > 1) {
@@ -189,18 +183,22 @@ const login = async (xmpp, username) => {
                 }
               }
             }
+            // handling messages received in the chat
             if (from === receptorC && option5) {
               const receivedMsg = stanza.getChildText('body');
               console.log(`\n${from}: ${receivedMsg}`);
             }
           }
         }
-        
+
+        // stanza to handle group chat messages
         if (stanza.is('message') && stanza.attrs.type === 'groupchat' && stanza.getChild('body')) {
           const from = stanza.attrs.from.split('/')[1];
           const receivedMsg = stanza.getChildText('body');
           console.log(`${from}: ${receivedMsg}`);
         }
+
+        // stanza to initially handle the contacts and their status from roster when logging in
         if (stanza.is('iq') && stanza.attrs.type === 'result') {
           const query = stanza.getChild('query');
           if (query && query.attrs.xmlns === 'jabber:iq:roster') {
@@ -213,6 +211,8 @@ const login = async (xmpp, username) => {
             })
           }
         }  
+
+        // stanza to handle the contacts and their status when they change
         if (stanza.is('presence')) {
           const from = stanza.attrs.from.split('@')[0];
           const veri2 = stanza.attrs.from.split('@')[1];
@@ -232,7 +232,8 @@ const login = async (xmpp, username) => {
             }
           }
         }
-
+        
+        // stanza to handle the subscription requests from other users
         if (stanza.is('presence') && stanza.attrs.type === 'subscribe') {
           const from = stanza.attrs.from;
           const presence = xml("presence", { type: "subscribed", to: from });
@@ -248,6 +249,8 @@ const login = async (xmpp, username) => {
         
         let selectedOption = await question('Select a menu option (or 10 to exit): ');
         switch (selectedOption) {
+
+          // handling all menu options
           case '1':
             if (Object.keys(contactsStatus).length > 0) {
               console.log("\n---------- Contacts and their status ----------");
@@ -353,23 +356,6 @@ const login = async (xmpp, username) => {
             break;
 
           case '8':
-            const filePath = await question('Enter the file path: ');
-            const filename = path.basename(filePath);
-            const filesize = fs.statSync(filePath).size;
-            
-            try {
-              const responseStanza = await uploadSlot(xmpp, filename, filesize);
-              console.log("Success:", responseStanza.toString());
-              const putUrl = responseStanza.getChild("slot").getChild("put").attrs.url;
-              const getUrl = responseStanza.getChild("slot").getChild("get").attrs.url;
-              await uploadFile(filePath, putUrl);
-              console.log("Link:", getUrl);
-            } catch (error) {
-              console.error("Error:", error);
-            }
-            break;
-
-          case '9':
             try {
               const response = await deleteAccount(xmpp);
               console.log(response);
@@ -380,7 +366,7 @@ const login = async (xmpp, username) => {
             }
             break;
 
-          case '10':
+          case '9':
             console.log('Logging out...');
             xmpp.stop();
             rl.close();
@@ -391,6 +377,7 @@ const login = async (xmpp, username) => {
       }
     });
 
+    // handling not authorized error
     xmpp.on("error", (err) => {
       if (err.toString().includes("not-authorized")) { 
         console.log('Incorrect username or password. Try again.\n');
@@ -402,6 +389,12 @@ const login = async (xmpp, username) => {
   })
 };
 
+/**
+ * Function to register a new account
+ * @param {String} username
+ * @param {String} password
+ * @returns {Promise} - Promise to handle the register process
+ */
 const register = (username, password) => {
   return new Promise((resolve, reject) => {
     const HOST = 'alumchat.xyz';
@@ -421,8 +414,11 @@ const register = (username, password) => {
       }
     });
     
+    // Connecting through socket to the XMPP server - TCP connection
     socket.on('end', resolve);
     socket.connect(PORT, HOST, () => {
+
+      // Sending the initial stream to the server
       socket.write(`<stream:stream to="'${HOST}'" xmlns="jabber:client" xmlns:stream="http://etherx.jabber.org/streams">`);
       const registerIq = `<iq type='set' id='register_id'>
                                 <query xmlns='jabber:iq:register'>
@@ -430,11 +426,17 @@ const register = (username, password) => {
                                   <password>${password}</password>
                                 </query>
                               </iq>`;
+      // Sending the register IQ stanza to the server
       socket.write(registerIq);
     });
   });
 };
 
+
+/**
+ * Main function to handle the main menu options
+ * @returns {Promise} - Promise to handle the main menu options
+ */
 
 const main = async () => {
   
