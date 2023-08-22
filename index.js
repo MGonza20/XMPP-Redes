@@ -366,16 +366,26 @@ const login = async (xmpp, username) => {
         
             const presenceGroupStanza = xml("presence", { to: `${groupJid}` });
             await xmpp.send(presenceGroupStanza);
+
+            console.log('\nEspecial commands:\n1. To end chat press key \'enter\'\n2. To send file type \'package\'\n ');
                 
             while (true) {
-                const groupMsg = await question('Enter a message (or press enter to leave chat): ');
+                let groupMsg = await question('Enter a message: ');
                 if (groupMsg === '') {
                     console.log('Leaving group chat...');
                     const exitGroupPresence = xml("presence", { to: `${groupJid}`, type: "unavailable" });
                     await xmpp.send(exitGroupPresence);
                     break;
                 }
-        
+                if (groupMsg === 'package') {
+                  const filePath = await question('Enter the file path: ');
+                  const fileExtension = filePath.split('.').pop();
+                  const fileBase64 = fs.readFileSync(filePath).toString('base64');
+  
+                  const package = `file-${fileExtension}://${fileBase64}`;
+                  groupMsg = package;
+                }
+
                 const groupMessageStanza = xml(
                   "message", { type: "groupchat", to: `${groupchat}@conference.alumchat.xyz` },
                   xml("body", {}, groupMsg)
