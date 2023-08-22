@@ -152,10 +152,10 @@ const login = async (xmpp, username) => {
   return new Promise((resolve, reject) => {
     xmpp.on("online", async () => {
       
-      let contactsStatus = {}; // Object to store the contacts and their status
+      let contactsStatus = {}; // Dictionary to store the contacts and their status
       let receptorC = ''; // Variable to store the receptor of the chat
       let option5 = false; // Variable flag to know if the user is in a chat or not
-      let newMessages = {}; // Object to store the new messages received to 
+      let newMessages = {}; // Dictionary to store the new messages received to 
                             // handle notifications and show them when the user enters the chat
 
       // Initially getting all the contacts from the roster
@@ -169,9 +169,13 @@ const login = async (xmpp, username) => {
         if (stanza.is('message') && stanza.attrs.type === 'chat' && stanza.getChild('body')) {
           if (stanza.getChild('body').children.length > 0) {
             const from = stanza.attrs.from.split('@')[0];
-            newMessages[from] = newMessages[from] ? [...newMessages[from], stanza.getChildText('body')] : 
-                                [stanza.getChildText('body')];
-
+            if (stanza.getChildText('body').includes('file-')) {
+              newMessages[from] = newMessages[from] ? [...newMessages[from], [`${from} sent you a file!`]] : 
+              [`${from} sent you a file!`];
+            } else {
+              newMessages[from] = newMessages[from] ? [...newMessages[from], stanza.getChildText('body')] : 
+                                                      [stanza.getChildText('body')];
+            }
             // handling new messages notifications
             for (contact in newMessages) {
               if (!(contact === receptorC)){
@@ -191,7 +195,7 @@ const login = async (xmpp, username) => {
                 const fileBuffer = Buffer.from(fileBase64, 'base64');
                 const randomHex = Math.floor(Math.random() * 16777215).toString(16);
                 fs.writeFileSync(`./receivedFile-${randomHex}.${fileExtension}`, fileBuffer);
-                console.log(`File received from ${from}!`);
+                console.log(`${from} sent you a file!`);
               } else {
                 console.log(`${from}: ${receivedMsg}`);
               }
@@ -207,8 +211,9 @@ const login = async (xmpp, username) => {
             const fileExtension = receivedMsg.split('file-')[1].split('://')[0];
             const fileBase64 = receivedMsg.split('file-')[1].split('://')[1];
             const fileBuffer = Buffer.from(fileBase64, 'base64');
-            fs.writeFileSync(`./receivedFile.${fileExtension}`, fileBuffer);
-            console.log(`File received from ${from}!`);
+            const randomHex = Math.floor(Math.random() * 16777215).toString(16);
+            fs.writeFileSync(`./receivedFile-${randomHex}.${fileExtension}`, fileBuffer);
+            console.log(`${from} sent a file!`);
           } else {
             console.log(`${from}: ${receivedMsg}`);
           }
