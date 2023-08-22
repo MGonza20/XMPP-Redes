@@ -42,5 +42,7 @@ node --no-warnings index.js
 ```
  
 ## Puntos a considerar
--  Para crear cuenta solo ingresa tu nombre de usuario, no nombre@alumchat.xyz y lo mismo cuando crees una sesión o envíes un mensaje a una persona.
+-  Para crear cuenta ingrese su nombre de usuario, no nombre@alumchat.xyz cuando se le solicite.
+-  Para iniciar sesión ingrese su nombre de usuario, no nombre@alumchat.xyz cuando se le solicite.
+-  Si desea enviar un mensaje a un usuario ingrese el nombre del usuario solamente, no nombre@alumchat.xyz.
 - Si desearas unirte a unirte ingresa solamente el nombre del grupo cuando lo solicite.
