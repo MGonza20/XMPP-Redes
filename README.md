@@ -32,7 +32,7 @@ El presente proyecto consta de implementar una mensajería instantánea con sopo
 npm install
 ```
 
-### Para correr el programa ejecutar
+#### Para correr el programa
 ```
 npm start
 ```
