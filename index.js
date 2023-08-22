@@ -171,7 +171,6 @@ const login = async (xmpp, username) => {
             const from = stanza.attrs.from.split('@')[0];
             if (stanza.getChildText('body').includes('file-')) {
               newMessages[from] = newMessages[from] ? [...newMessages[from], [`${from} sent you a file!`]] : 
-              [`${from} sent you a file!`];
             } else {
               newMessages[from] = newMessages[from] ? [...newMessages[from], stanza.getChildText('body')] : 
                                                       [stanza.getChildText('body')];
