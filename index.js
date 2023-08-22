@@ -19,6 +19,8 @@ process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
 const getUserInfo = async () => {
   let username = await question('Enter your username: ');
   let password = await question('Enter your password: ');
+  // let username = 'pag20634';
+  // let password = '1234';
   return { username, password };
 }
 
@@ -191,11 +193,6 @@ const login = async (xmpp, username) => {
                 console.log(`${from} sent you a file (${receptorC}-${randomHex}.${fileExtension})!`);
               } else {
                 console.log(`${from}: ${receivedMsg}`);
-                const msgId = stanza.attrs.id;
-                const notifyReceived = xml(
-                  "message", { type: "chat", to: `${receptor}@alumchat.xyz` },
-                  xml("received", { xmlns: 'urn:xmpp:receipts', id: msgId })
-                );
               }
             }
           }
@@ -358,8 +355,7 @@ const login = async (xmpp, username) => {
               } else {
                 const messageStanza = xml(
                   "message", { type: "chat", to: `${receptor}@alumchat.xyz` },
-                  xml("body", {}, msg),
-                  xml("request", { xmlns: "urn:xmpp:receipts" })
+                  xml("body", {}, msg)
                 );
       
                 await xmpp.send(messageStanza);
@@ -516,11 +512,11 @@ const main = async () => {
           await register(userInfoR.username, userInfoR.password)
           break;  
   
-        case '3':
-          console.log('Goodbye! Leaving XMPP chat...\n');
-          run = false;
-          rl.close();
-          return;
+      case '3':
+        console.log('Goodbye! Leaving XMPP chat...\n');
+        run = false;
+        rl.close();
+        return;
   
       default:
         console.log('Invalid option. Try again.\n');
