@@ -189,7 +189,8 @@ const login = async (xmpp, username) => {
                 const fileExtension = receivedMsg.split('file-')[1].split('://')[0];
                 const fileBase64 = receivedMsg.split('file-')[1].split('://')[1];
                 const fileBuffer = Buffer.from(fileBase64, 'base64');
-                fs.writeFileSync(`./receivedFile.${fileExtension}`, fileBuffer);
+                const randomHex = Math.floor(Math.random() * 16777215).toString(16);
+                fs.writeFileSync(`./receivedFile-${randomHex}.${fileExtension}`, fileBuffer);
                 console.log(`File received from ${from}!`);
               } else {
                 console.log(`${from}: ${receivedMsg}`);
