@@ -31,7 +31,7 @@ const mainMenu = async () => {
 
 
 const showMenuOptions = () => {
-  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participate in group conversations\n7. Define presence message\n\n8. Delete account\n9. Logout\n')
+  console.log('\n--------------------   Menu   --------------------\n1. Show contacts and status\n2. Add user to contacts\n3. Define user details\n4. Show contact details\n5. Chat one to one with user\n6. Participate in group conversations\n7. Define presence message\n8. Delete account\n9. Logout\n')
 }
 
 
@@ -175,11 +175,11 @@ const login = async (xmpp, username) => {
 
             // handling new messages notifications
             for (contact in newMessages) {
-              if (!option5){
+              if (!(contact === receptorC)){
                 if (newMessages[contact].length > 1) {
-                  console.log(`\nYou have ${newMessages[contact].length} new messages from ${contact}!`);
+                  console.log(`You have ${newMessages[contact].length} new messages from ${contact}!`);
                 } else if (newMessages[contact].length === 1){
-                  console.log(`\nYou have a new message from ${contact}!`);
+                  console.log(`You have a new message from ${contact}!`);
                 }
               }
             }
