@@ -1,6 +1,7 @@
 const { client, xml } = require("@xmpp/client");
 const readlineAsync = require('readline');
 const net = require('net');
+const fs = require('fs');
 
 // async readline to be able to use await and async in the question method
 // also to handle async functions
@@ -146,8 +147,6 @@ const deleteAccount = async (xmpp) => {
  * @param {Object} xmpp 
  * @param {String} username 
  */
-
-
 const login = async (xmpp, username) => {
 
   return new Promise((resolve, reject) => {
@@ -299,6 +298,8 @@ const login = async (xmpp, username) => {
             receptorC = receptor;
             option5 = true;
 
+            console.log('\nEspecial commands:\n1. To end chat press key \'enter\'\n2. To send file type \'package\'\n ');
+
             if (newMessages[receptor]) {
               for (let i = 0; i < newMessages[receptor].length; i++) {
                 console.log(`${receptor}: ${newMessages[receptor][i]}`);
@@ -307,19 +308,33 @@ const login = async (xmpp, username) => {
             }
 
             while (true) {
-              const msg = await question('Enter your message (or press enter to end chat): ');
+              const msg = await question('Enter your message: ');
               if (msg === '') {
                 console.log('Exiting chat...');
                 option5 = false;
                 break;
               }
-    
-              const messageStanza = xml(
-                "message", { type: "chat", to: `${receptor}@alumchat.xyz` },
-                xml("body", {}, msg)
-              );
-    
-              await xmpp.send(messageStanza);
+              if (msg === 'package') {
+                const filePath = await question('Enter the file path: ');
+                const fileExtension = filePath.split('.').pop();
+                const fileBase64 = fs.readFileSync(filePath).toString('base64');
+
+                const package = `file-${fileExtension}://${fileBase64}`;
+                console.log(package);
+
+                const fileStanza = xml(
+                  "message", { type: "chat", to: `${receptor}@alumchat.xyz` },
+                  xml("body", {}, package)
+                );
+                await xmpp.send(fileStanza);
+              } else {
+                const messageStanza = xml(
+                  "message", { type: "chat", to: `${receptor}@alumchat.xyz` },
+                  xml("body", {}, msg)
+                );
+      
+                await xmpp.send(messageStanza);
+              }
             }
             break;
 
