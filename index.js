@@ -185,7 +185,15 @@ const login = async (xmpp, username) => {
             // handling messages received in the chat
             if (from === receptorC && option5) {
               const receivedMsg = stanza.getChildText('body');
-              console.log(`\n${from}: ${receivedMsg}`);
+              if (receivedMsg.includes('file-')) {
+                const fileExtension = receivedMsg.split('file-')[1].split('://')[0];
+                const fileBase64 = receivedMsg.split('file-')[1].split('://')[1];
+                const fileBuffer = Buffer.from(fileBase64, 'base64');
+                fs.writeFileSync(`./receivedFile.${fileExtension}`, fileBuffer);
+                console.log(`File received from ${from}!`);
+              } else {
+                console.log(`${from}: ${receivedMsg}`);
+              }
             }
           }
         }
@@ -194,7 +202,15 @@ const login = async (xmpp, username) => {
         if (stanza.is('message') && stanza.attrs.type === 'groupchat' && stanza.getChild('body')) {
           const from = stanza.attrs.from.split('/')[1];
           const receivedMsg = stanza.getChildText('body');
-          console.log(`${from}: ${receivedMsg}`);
+          if (receivedMsg.includes('file-')) {
+            const fileExtension = receivedMsg.split('file-')[1].split('://')[0];
+            const fileBase64 = receivedMsg.split('file-')[1].split('://')[1];
+            const fileBuffer = Buffer.from(fileBase64, 'base64');
+            fs.writeFileSync(`./receivedFile.${fileExtension}`, fileBuffer);
+            console.log(`File received from ${from}!`);
+          } else {
+            console.log(`${from}: ${receivedMsg}`);
+          }
         }
 
         // stanza to initially handle the contacts and their status from roster when logging in
@@ -320,7 +336,6 @@ const login = async (xmpp, username) => {
                 const fileBase64 = fs.readFileSync(filePath).toString('base64');
 
                 const package = `file-${fileExtension}://${fileBase64}`;
-                console.log(package);
 
                 const fileStanza = xml(
                   "message", { type: "chat", to: `${receptor}@alumchat.xyz` },
