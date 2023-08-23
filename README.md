@@ -1,6 +1,8 @@
 
 # Proyecto - XMPP - Redes
 
+link: https://github.com/MGonza20/XMPP-Redes
+
 ## Características del proyecto
 
 El presente proyecto consta de implementar una mensajería instantánea con soporte del protocolo XMPP(eXtensible Messging and Presence Protocol) para lograr establecer la interconexión de distintos clientes. Se busca implementar un protocolo en base a los estándares establecidos y lograr comprender tanto el propósito del protocolo XMPP como el funcionamiento de los servicios de este protocolo, además de lograr entender las bases de la programación asíncrona.
